@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10131c">
+  <meta name="description" content="Offline digitális zenész-könyv fellépésekhez. Mindig veled a színpadon.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>STEFY DALSZÖVEGEK</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="overrides.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <button class="brand" data-page="home" aria-label="Kezdőlap"><span class="brand-mark">♫</span><span><strong>STEFY <i>DALSZÖVEGEK</i></strong><small>Mindig veled a színpadon.</small></span></button>
+      <div class="top-actions"><span class="offline-pill"><b></b><span>Helyben mentve</span></span><button class="icon-btn" id="quickAdd" aria-label="Új dal">＋</button></div>
+    </header>
+    <main id="main"></main>
+    <nav class="bottom-nav" aria-label="Fő navigáció">
+      <button data-action="page" data-page="home" class="nav-item active"><span>⌂</span><small>Kezdőlap</small></button>
+      <button data-action="page" data-page="songs" class="nav-item"><span>♫</span><small>Dalok</small></button>
+      <button data-action="page" data-page="gigs" class="nav-item"><span>♬</span><small>Fellépés</small></button>
+      <button data-action="page" data-page="settings" class="nav-item"><span>⚙</span><small>Beállítások</small></button>
+    </nav>
+  </div>
+  <div id="overlay"></div>
+  <div id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>

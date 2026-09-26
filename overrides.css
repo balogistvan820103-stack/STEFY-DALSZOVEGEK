@@ -1,0 +1,17 @@
+.song-reader{--reader-background:none;position:relative;inset:auto;z-index:auto;isolation:isolate;overflow:visible;min-height:calc(100dvh - 200px);margin:-10px -10px 0;background-color:transparent;background-image:none}
+.song-reader:after{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;background-image:var(--reader-background);background-position:center;background-size:cover;background-attachment:fixed;filter:brightness(var(--background-brightness,1))}
+.song-reader:before{position:absolute;inset:0;z-index:-1}
+.reader-wrap{min-height:0}
+.normal-reader .reader-wrap{min-height:calc(100dvh - 190px)}
+.performance-reader{position:fixed;inset:0;z-index:20;overflow-y:auto;margin:0;min-height:0}
+.performance-reader .reader-wrap{min-height:100dvh}
+.reader-wrap{max-width:1050px;margin:auto;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 28px) 30px calc(env(safe-area-inset-bottom) + 20px)}
+.field.form-inline{grid-template-columns:1fr auto;align-items:end}
+.field[style*="grid-template-columns:1fr auto"] label{grid-column:1/-1}
+.drag-handle{touch-action:none;user-select:none}
+body.light .song-reader:before{background:rgba(248,247,243,var(--scrim))}
+body.light .reader-title,body.light .reader-lyrics{color:#20232c}
+body.light .reader-lyrics{text-shadow:none}
+body.light .reader-meta{color:#555b66}
+body.light .field label,body.light .slider-row,body.light .switch-row strong,body.light h1,body.light h2,body.light h3,body.light .section-head{color:#242832}
+@media(max-width:700px){.normal-reader{margin:-8px -7px 0;min-height:calc(100dvh - 175px)}.normal-reader .reader-wrap{min-height:calc(100dvh - 180px)}.reader-wrap{padding-left:20px;padding-right:20px}}
