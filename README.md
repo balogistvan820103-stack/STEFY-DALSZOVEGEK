@@ -25,3 +25,11 @@ A **Dalok** képernyőn TXT-fájlokat egyszerre is beolvashatsz; az alkalmazás 
 ## Tesztelés helyi gépen
 
 A `outputs` tartalmát kiszolgáló HTTPS alatt vagy helyi fejlesztői szerveren nyisd meg. Az első betöltést követően próbáld ki a keresést, TXT-importot, címke szerinti tömeges szerkesztést, fellépés módot és az export/import műveleteket. A böngészőből történő mappaválasztás elérhetősége a böngészőtől és annak verziójától függ; a többfájlos tallózás tartalék lehetőség.
+
+## Fellépési lista: több dal hozzáadása
+
+A fellépés-lista szerkesztésekor a **Dalok hozzáadása** gomb teljes, kereshető dalválasztót nyit. Jelöld ki egyszerre a kívánt dalokat, majd válaszd a **Kijelöltek hozzáadása** gombot. A listában már szereplő dalok megjelölve és letiltva jelennek meg; az új dalok a lista végére kerülnek, a műsor automatikusan mentődik.
+
+## Dalcímek mérete
+
+A **Beállítások → DALCÍMEK BETŰMÉRETE** csúszka 18–36 px között állítható, alapértéke 24 px. Ez a dalcímekre és a fellépés dalválasztójára vonatkozik; a dalszöveg betűméretétől független. A választás helyben megőrződik.
