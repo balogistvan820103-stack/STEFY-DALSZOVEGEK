@@ -112,3 +112,42 @@ body.light .bulk-bar{background:#fff;border-color:#ccd4df}body.light .bulk-bar s
 .multi-song-row.already-added{opacity:.56;cursor:default}
 .multi-song-title{flex:1;min-width:0}
 @media(max-width:700px){.song-row .song-title,.gig-song .song-title,.multi-song-title{font-size:clamp(18px,min(var(--song-title-size,24px),5.5vw),24px)}.song-row{min-height:60px;padding-inline:12px;gap:8px}.gig-song{gap:6px;padding:10px 8px}.drag-handle{padding:2px}.multi-song-row{min-height:54px;padding:8px 6px}.multi-song-list{max-height:48dvh}}
+
+/* v33: clear performance-list navigation and touch-safe editing controls. */
+:root{--nav-blue:#3d9cff;--save-green:#36c98f;--select-orange:#f4a340;--danger-red:#f06b70;--current-teal:#20c7b4}
+.back-view,.page-back .btn,.form-actions>[data-page],.reader-close{min-width:48px;min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #57a9ff66!important;color:#fff!important;background:#1478c2!important;font-weight:800}
+.btn.primary,.btn.primary.large,[data-action="save-gig"]{border-color:#36c98f!important;background:#16875e!important;color:#fff!important}
+.btn.danger,[data-action="delete-gig"],[data-action="delete-song"]{border-color:#f06b70!important;background:#a73842!important;color:#fff!important}
+.btn.import-btn,[data-action="toggle-selection"],[data-action="add-gig-songs"]{border-color:#f4a34088!important;color:#ffe0b6!important}
+.reader-close{width:50px;height:50px;border-radius:50%;font-size:28px!important;flex:none}
+.song-reader .reader-close[aria-label="Szerkesztés"]{background:#a66b11!important;border-color:#ffd16a!important}
+.page-back{margin-bottom:10px}
+.performance-lock{display:flex;align-items:center;gap:12px;width:min(100%,780px);min-height:64px;padding:11px 15px;margin:16px 0;border:1px solid #f4a34088;border-radius:14px;background:#f4a34018;color:#fff;cursor:pointer}
+.performance-lock input{width:25px;height:25px;margin:0;accent-color:var(--select-orange);flex:none}
+.performance-lock .lock-indicator{font-size:24px}
+.performance-lock strong,.performance-lock small{display:block}.performance-lock strong{font-size:14px;letter-spacing:.035em}.performance-lock small{margin-top:3px;color:#cbd4df;font-size:12px}
+.performance-lock.locked{border-color:#f06b70;background:#f06b7020;box-shadow:0 0 0 1px #f06b7033}
+.gig-song-page{max-width:1000px;margin:0 auto}.gig-song-page-title{margin:4px 0 0;font-size:clamp(27px,4vw,38px);overflow-wrap:anywhere}
+.gig-song-page .performance-lock{margin:14px 0}.gig-title-search{max-width:none;min-height:54px;margin:10px 0 12px}
+.gig-title-list{max-height:calc(100dvh - 345px);min-height:190px;overflow:auto;overscroll-behavior:contain;border:1px solid #ffffff18;border-radius:16px;background:#0d1420;padding:6px}
+.gig-title-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto 44px;align-items:center;gap:10px;min-height:66px;padding:7px 9px;border-bottom:1px solid #ffffff12;border-radius:10px}
+.gig-title-row:last-child{border-bottom:0}.gig-title-row .row-number{font-size:18px;font-weight:800;color:var(--gold2);text-align:center}
+.gig-title-open{min-width:0;min-height:50px;padding:6px 0;border:0;background:transparent;color:#f7f8fa;text-align:left;font:700 clamp(20px,var(--song-title-size,24px),36px)/1.2 system-ui,sans-serif;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.gig-title-row.is-current-song{border-left:5px solid var(--current-teal);background:#20c7b41c;padding-left:5px}.current-song-badge{padding:5px 8px;border-radius:999px;background:#20c7b42e;color:#6be4d7;font-size:11px;font-weight:900;letter-spacing:.06em}
+.gig-title-row.reorder-dragging,.song-row.reorder-dragging,.gig-song.reorder-dragging{position:relative;z-index:5;opacity:.85;background:#f4a34038;outline:2px solid var(--select-orange);box-shadow:0 12px 30px #0009;transform:scale(1.01)}
+.song-reorder-handle,.drag-handle{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:11px;color:#ffbf63;background:#f4a34022;font-size:24px;font-weight:900;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.song-row{gap:9px}.song-row .song-reorder-handle{order:9;flex:none}.song-row.recently-edited{outline:2px solid #36c98f;box-shadow:0 0 0 4px #36c98f22}
+.gig-song .drag-handle{color:#ffc36d;background:#f4a34022}.library-order-mode,.favorite-order-toolbar label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.library-order-mode .select{min-width:150px}
+.favorite-order-toolbar{display:flex;justify-content:flex-end;margin:6px 0 14px}.favorite-order-toolbar .select{min-height:44px}
+.multi-song-row input,.song-select{width:28px!important;height:28px!important;accent-color:var(--select-orange);cursor:pointer;flex:none}
+.bulk-bar{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:4;padding:12px;border:1px solid #f4a34055;border-radius:14px;background:#171a20f5;box-shadow:0 8px 28px #0008}
+.home-font-picker{margin:8px 0}.home-font-picker .select{min-height:44px}
+.home-custom-label{font-family:var(--home-font-family,inherit)}
+.home-font-modern{font-family:system-ui,"Arial",sans-serif!important;font-weight:900!important;letter-spacing:.005em}
+.home-font-classic{font-family:Georgia,"Times New Roman",serif!important;font-weight:700!important;letter-spacing:.02em}
+.home-font-handwriting{font-family:"Segoe Script","Brush Script MT",cursive!important;font-style:italic;font-weight:600!important}
+.home-font-thin{font-family:"Arial",system-ui,sans-serif!important;font-weight:300!important;letter-spacing:.07em}
+.home-font-stage{font-family:Georgia,"Times New Roman",serif!important;font-weight:900!important;letter-spacing:.035em;text-shadow:0 2px 0 #000,0 0 14px #f4c95d77}
+.gig-empty{padding:28px}
+@media(max-width:700px){.gig-title-list{max-height:calc(100dvh - 330px)}.gig-title-row{grid-template-columns:36px minmax(0,1fr) auto 44px;gap:6px;min-height:62px;padding:5px}.gig-title-row .row-number{font-size:16px}.gig-title-open{font-size:clamp(18px,min(var(--song-title-size,24px),6vw),26px)}.current-song-badge{font-size:9px;padding:4px 6px}.library-order-mode{width:100%;justify-content:space-between}.bulk-bar{bottom:calc(70px + env(safe-area-inset-bottom))}}
+@media(orientation:landscape) and (min-width:701px){.gig-title-list{max-height:calc(100dvh - 265px)}.gig-song-page{max-width:1100px}.gig-title-row{min-height:58px}}
