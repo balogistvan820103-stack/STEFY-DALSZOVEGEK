@@ -4,9 +4,12 @@
   const safeSettings=()=>{
     for(const key of ['gigSearchById','gigScrollById','gigProgress','homeFonts'])if(!state.settings[key]||typeof state.settings[key]!=='object'||Array.isArray(state.settings[key]))state.settings[key]={};
     for(const key of ['songOrder','favoriteOrder'])if(!Array.isArray(state.settings[key]))state.settings[key]=[];
+    if(!state.settings.tagOrderByName||typeof state.settings.tagOrderByName!=='object'||Array.isArray(state.settings.tagOrderByName))state.settings.tagOrderByName={};
+    if(!state.settings.tagManualByName||typeof state.settings.tagManualByName!=='object'||Array.isArray(state.settings.tagManualByName))state.settings.tagManualByName={};
     if(typeof state.settings.performanceLocked!=='boolean')state.settings.performanceLocked=false;
-    if(typeof state.settings.favoriteManual!=='boolean')state.settings.favoriteManual=false;
-    if(typeof state.settings.libraryManual!=='boolean')state.settings.libraryManual=false;
+    if(typeof state.settings.favoriteManual!=='boolean')state.settings.favoriteManual=true;
+    if(typeof state.settings.libraryManual!=='boolean')state.settings.libraryManual=true;
+    for(const tag of state.tags||[])if(typeof state.settings.tagManualByName[tag]!=='boolean')state.settings.tagManualByName[tag]=true;
   };
   const isLocked=()=>state.settings?.performanceLocked===true;
   const currentView=()=>history.state?.stefySongbook&&history.state.view?history.state.view:null;
@@ -110,7 +113,9 @@
   const baseSongsView=songsView;
   songsView=function(){
     let html=baseSongsView();
-    const manual=`<label class="library-order-mode"><span>Lista</span><select class="select" id="libraryOrderMode"><option value="sorted" ${state.settings.libraryManual?'':'selected'}>Rendezés szerint</option><option value="manual" ${state.settings.libraryManual?'selected':''}>Kézi sorrend</option></select></label>`;
+    safeSettings();
+    const tagMode=Boolean(activeTag),manualOn=tagMode?state.settings.tagManualByName[activeTag]===true:state.settings.libraryManual===true;
+    const manual=`<label class="library-order-mode"><span>${tagMode?'Címke sorrendje':'Dalok sorrendje'}</span><select class="select" id="${tagMode?'tagOrderMode':'libraryOrderMode'}" aria-label="${tagMode?'Címke dalainak sorrendje':'Dalok sorrendje'}"><option value="sorted" ${manualOn?'':'selected'}>Automatikus sorrend</option><option value="manual" ${manualOn?'selected':''}>Saját sorrend</option></select><small class="reorder-help">Saját sorrendben tartsd nyomva a sárga ⠿ fogantyút, és húzd a dalt.</small></label>`;
     return html.replace('<div class="toolbar">','<div class="toolbar">'+manual);
   };
   const baseFilteredSongs=filteredSongs;
@@ -118,6 +123,11 @@
   function sortedByManual(list,ids){const order=baseOrder(ids,list);const rank=new Map(order.map((id,i)=>[id,i]));return list.slice().sort((a,b)=>(rank.get(a.id)??1e9)-(rank.get(b.id)??1e9)||a.title.localeCompare(b.title,'hu'))}
   filteredSongs=function(list=state.songs,q=query){
     const a=baseFilteredSongs(list,q);
+    if(!String(q||'').trim()&&page==='songs'&&activeTag){
+      const tagged=a.filter(song=>(song.tags||[]).includes(activeTag));
+      if(state.settings.tagManualByName?.[activeTag])return sortedByManual(tagged,state.settings.tagOrderByName?.[activeTag]||[]);
+      return tagged;
+    }
     if(!String(q||'').trim()&&page==='songs'&&state.settings.libraryManual)return sortedByManual(a,state.settings.songOrder);
     if(!String(q||'').trim()&&page==='favorites'&&state.settings.favoriteManual)return sortedByManual(a,state.settings.favoriteOrder);
     return a;
@@ -129,8 +139,8 @@
   const baseSongRows=songRows;
   songRows=function(rows,options={}){
     let html=baseSongRows(rows,options);
-    const manual=!html.includes('data-song-select')&&((page==='songs'&&state.settings.libraryManual&&!query)||(page==='favorites'&&state.settings.favoriteManual));
-    if(manual){const kind=page==='favorites'?'favorites':'songs';html=html.replace(/<div class="song-row" data-action="open-song" data-id="([^"]+)" role="button" tabindex="0">/g,(whole,id)=>`${whole.replace(' role="button"',` data-reorder-row data-reorder-kind="${kind}" role="button"`)}<span class="song-reorder-handle" data-reorder-handle title="Hosszan nyomd meg, majd húzd a rendezéshez" aria-label="Dal átrendezése">⠿</span>`)}
+    const manual=!html.includes('data-song-select')&&((page==='songs'&&(activeTag?state.settings.tagManualByName?.[activeTag]:state.settings.libraryManual)&&!String(query||'').trim())||(page==='favorites'&&state.settings.favoriteManual));
+    if(manual){const kind=page==='favorites'?'favorites':activeTag?'tag':'songs';html=html.replace(/<div class="song-row" data-action="open-song" data-id="([^"]+)" role="button" tabindex="0">/g,(whole,id)=>`${whole.replace(' role="button"',` data-reorder-row data-reorder-kind="${kind}" role="button"`)}<span class="song-reorder-handle" data-reorder-handle title="Tartsd nyomva, majd húzd a dal áthelyezéséhez" aria-label="Dal átrendezése">⠿</span>`)}
     return html;
   };
 
@@ -227,6 +237,8 @@
       const all=state.songs.map(s=>s.id),old=baseOrder(state.settings.songOrder,sortedByManual(state.songs,[]).map(s=>s.id));
       state.settings.songOrder=mergeVisibleOrder(old,ids,old.filter(id=>ids.includes(id)));
       for(const id of all)if(!state.settings.songOrder.includes(id))state.settings.songOrder.push(id);
+    }else if(kind==='tag'){
+      safeSettings();state.settings.tagOrderByName[activeTag]=ids;
     }else if(kind==='favorites'){
       const all=state.songs.filter(s=>s.favorite).map(s=>s.id),old=baseOrder(state.settings.favoriteOrder,sortedByManual(state.songs.filter(s=>s.favorite),[]).map(s=>s.id));
       state.settings.favoriteOrder=mergeVisibleOrder(old,ids,old.filter(id=>ids.includes(id)));
@@ -282,6 +294,11 @@
     if(event.target.id==='libraryOrderMode'){
       safeSettings();state.settings.libraryManual=event.target.value==='manual';await persist();render();return;
     }
+    if(event.target.id==='tagOrderMode'){
+      safeSettings();state.settings.tagManualByName[activeTag]=event.target.value==='manual';
+      if(state.settings.tagManualByName[activeTag]&&!state.settings.tagOrderByName[activeTag])state.settings.tagOrderByName[activeTag]=state.songs.filter(song=>(song.tags||[]).includes(activeTag)).sort((a,b)=>a.title.localeCompare(b.title,'hu')).map(song=>song.id);
+      await persist();render();return;
+    }
     if(event.target.id==='favoriteOrderMode'){
       safeSettings();state.settings.favoriteManual=event.target.value==='manual';await persist();render();return;
     }
@@ -330,3 +347,4 @@
   window.__stefyPerformanceLock=()=>isLocked();
   window.__stefyRecordListView=()=>{pendingReturnView=currentScrollSnapshot();window.__stefyReturnView=pendingReturnView;return pendingReturnView};
 })();
+

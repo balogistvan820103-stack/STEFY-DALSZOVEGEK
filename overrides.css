@@ -65,9 +65,9 @@ body.light .bulk-bar{background:#fff;border-color:#ccd4df}body.light .bulk-bar s
 @media(max-width:700px){.home-stage{min-height:calc(100dvh - 72px)}.home-title{letter-spacing:.045em;padding-left:.045em}.home-tagline{letter-spacing:.1em}.home-vinyl{width:115vw;right:-52%;bottom:-43%}.home-stage-line{bottom:8%;left:8%;right:8%}.import-tools .btn{flex:1 1 44%;font-size:12px;padding-inline:10px}.bulk-bar>*{flex:1 1 auto}.bulk-bar strong{flex-basis:100%}.bulk-bar select{max-width:none;width:100%}.import-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.import-preview-list{grid-template-columns:1fr}}
 @media(orientation:landscape) and (min-width:701px){.home-stage{min-height:calc(100dvh - 84px)}.home-wordmark{transform:translateY(-1vh)}.home-stefy{font-size:clamp(55px,12vh,126px)}.home-title{font-size:clamp(28px,7vh,68px);margin-top:8px}.home-tagline{margin-top:14px}}
 
-/* Two-column song library on tablet/desktop; retain a single column on phones. */
-@media(min-width:701px){.song-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:9px}.song-list>.song-row{min-width:0;height:100%;box-sizing:border-box}.song-list .song-title{min-width:0;overflow-wrap:anywhere;white-space:normal}}
-@media(max-width:700px){.song-list{display:flex;flex-direction:column}}
+/* Two-column song library on tablets, including narrow CSS viewports. */
+@media(min-width:520px){.song-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:9px}.song-list>.song-row{min-width:0;height:100%;box-sizing:border-box}.song-list .song-title{min-width:0;overflow-wrap:anywhere;white-space:normal}}
+@media(max-width:519px){.song-list{display:flex;flex-direction:column}}
 
 /* Customizable stage home and touch-friendly editor preview. */
 .home-stage:before{background-position:var(--home-bg-position,center),center,center,center,center;background-size:var(--home-bg-size,cover),auto,auto,auto,cover}
