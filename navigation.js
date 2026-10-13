@@ -14,7 +14,7 @@
     const tag=event.target.closest('[data-action="tag-filter"]');
     if(tag){putState({...currentView(),page:'songs',activeTag:tag.dataset.tag||'',query:'',currentSongId:null,readerContext:null});return}
     const editReader=event.target.closest('[data-action="edit-reader-song"]');
-    if(editReader){if(state.settings?.performanceLocked){event.preventDefault();event.stopImmediatePropagation();notify('A fellépési mód zárolva van. Előbb oldd fel a szerkesztéshez.');return}const id=currentSongId,origin=window.__stefyReturnView||currentView();putState({...currentView(),page:'editor',editorId:id,currentSongId:null,readerContext:null,returnView:origin});event.preventDefault();event.stopImmediatePropagation();return}
+    if(editReader){if(state.settings?.performanceLocked===true){event.preventDefault();event.stopImmediatePropagation();notify('A fellépési mód zárolva van. Előbb oldd fel a szerkesztéshez.');return}const id=currentSongId,origin=window.__stefyReturnView||currentView();putState({...currentView(),page:'editor',editorId:id,currentSongId:null,readerContext:null,returnView:origin});event.preventDefault();event.stopImmediatePropagation();page='editor';editorId=id;currentSongId=null;readerContext=null;modal=null;render();return}
     const drawerSong=event.target.closest('[data-action="drawer-song"]');
     if(drawerSong&&currentSongId){replaceView({...currentView(),currentSongId:drawerSong.dataset.id});return}
   },true);
@@ -27,3 +27,4 @@
     enterSong=async function(id,context=null){const view={...currentView(),currentSongId:id,readerContext:cloneContext(context)};if(currentSongId)replaceView(view);else putState(view);return originalEnterSong(id,context)};
   });
 })();
+
