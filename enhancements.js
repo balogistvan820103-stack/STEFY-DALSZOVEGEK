@@ -10,7 +10,7 @@
   };
   const isLocked=()=>state.settings?.performanceLocked===true;
   const currentView=()=>history.state?.stefySongbook&&history.state.view?history.state.view:null;
-  let pendingReturnView=null,editedSongId=null,drag=null,pressTimer=0,suppressClickUntil=0,searchSaveTimer=0,scrollSaveTimer=0;
+  let pendingReturnView=null,editedSongId=null,drag=null,pressTimer=0,suppressClickUntil=0,searchSaveTimer=0,scrollSaveTimer=0,dragScrollTimer=0;
 
   function currentScrollSnapshot(){
     const view=currentView()||{};
@@ -190,6 +190,29 @@
     if(isLocked()||((kind==='songs'||kind==='favorites')&&!handle.closest('.song-list')))return false;
     return {row,kind,container:row.closest('#gigSongs,#gigTitleList,.song-list'),moved:false,started:false,pointerId:null};
   }
+  function reorderAtPoint(d,x,y){
+    const hit=document.elementFromPoint(x,y)?.closest('[data-reorder-row],.gig-song[data-gig-song]');
+    if(!hit||hit===d.row||hit.parentElement!==d.container)return;
+    const rect=hit.getBoundingClientRect(),after=y>rect.top+rect.height/2;
+    hit.parentElement.insertBefore(d.row,after?hit.nextSibling:hit);d.moved=true;
+    if(d.kind==='gig')d.container.querySelectorAll('.row-number').forEach((n,i)=>n.textContent=`${i+1}.`);
+  }
+  function updateDragAutoScroll(d){
+    const container=d.container,style=container?getComputedStyle(container):null;
+    const internal=container&&container.scrollHeight>container.clientHeight+4&&/(auto|scroll)/.test(`${style.overflowY} ${style.overflow}`);
+    const rect=internal?container.getBoundingClientRect():{top:0,bottom:innerHeight};
+    const edge=Math.min(72,Math.max(38,(rect.bottom-rect.top)*.12));
+    const direction=d.pointerY<rect.top+edge?-1:d.pointerY>rect.bottom-edge?1:0;
+    d.scrollDirection=direction;d.scrollInternal=internal;
+    if(!direction){clearInterval(dragScrollTimer);dragScrollTimer=0;return}
+    if(dragScrollTimer)return;
+    dragScrollTimer=setInterval(()=>{
+      if(!drag?.started){clearInterval(dragScrollTimer);dragScrollTimer=0;return}
+      if(!drag.scrollDirection)return;
+      if(drag.scrollInternal)container.scrollTop+=drag.scrollDirection*18;else window.scrollBy(0,drag.scrollDirection*18);
+      reorderAtPoint(drag,drag.pointerX,drag.pointerY);
+    },35);
+  }
   function persistReorder(stateDrag){
     const {kind,container}=stateDrag;if(!container)return;
     const rows=[...container.querySelectorAll(kind==='gig'?'.gig-title-row[data-id],.gig-song[data-gig-song]':'.song-row[data-id]')];
@@ -220,18 +243,15 @@
   document.addEventListener('pointermove',event=>{
     if(!drag)return;event.stopImmediatePropagation();
     if(!drag.started){if(Math.abs(event.movementX||0)+Math.abs(event.movementY||0)>12){clearTimeout(pressTimer);drag=null}return}
-    event.preventDefault();const hit=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-reorder-row],.gig-song[data-gig-song]');
-    if(!hit||hit===drag.row||hit.parentElement!==drag.container)return;
-    const rect=hit.getBoundingClientRect(),after=event.clientY>rect.top+rect.height/2;
-    hit.parentElement.insertBefore(drag.row,after?hit.nextSibling:hit);drag.moved=true;
-    if(drag.kind==='gig')drag.container.querySelectorAll('.row-number').forEach((n,i)=>n.textContent=`${i+1}.`);
+    event.preventDefault();drag.pointerX=event.clientX;drag.pointerY=event.clientY;
+    reorderAtPoint(drag,drag.pointerX,drag.pointerY);updateDragAutoScroll(drag);
   },true);
   document.addEventListener('pointerup',event=>{
-    if(!drag)return;event.stopImmediatePropagation();clearTimeout(pressTimer);const d=drag;drag=null;document.body.classList.remove('reordering');
+    if(!drag)return;event.stopImmediatePropagation();clearTimeout(pressTimer);clearInterval(dragScrollTimer);dragScrollTimer=0;const d=drag;drag=null;document.body.classList.remove('reordering');
     d.row.classList.remove('reorder-dragging');
     if(d.started&&d.moved){suppressClickUntil=Date.now()+300;persistReorder(d)}
   },true);
-  document.addEventListener('pointercancel',()=>{clearTimeout(pressTimer);drag?.row.classList.remove('reorder-dragging');drag=null;document.body.classList.remove('reordering')},true);
+  document.addEventListener('pointercancel',()=>{clearTimeout(pressTimer);clearInterval(dragScrollTimer);dragScrollTimer=0;drag?.row.classList.remove('reorder-dragging');drag=null;document.body.classList.remove('reordering')},true);
   document.addEventListener('click',event=>{
     if(event.target.closest('[data-reorder-handle],.gig-songs .drag-handle')){event.preventDefault();event.stopImmediatePropagation();return}
     if(Date.now()<suppressClickUntil){suppressClickUntil=0;event.preventDefault();event.stopImmediatePropagation()}
