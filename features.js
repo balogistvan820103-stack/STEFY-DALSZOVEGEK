@@ -61,7 +61,7 @@ function bulkBar(){
 function importTools(){
   const directoryProbe=document.createElement('input');directoryProbe.type='file';
   const folderPicker=typeof window.showDirectoryPicker==='function'||'webkitdirectory'in directoryProbe;
-  return `<div class="library-shortcuts"><button class="btn ghost" data-action="page" data-page="favorites">⭐ Kedvencek</button><button class="btn ghost" data-action="page" data-page="recent">🕐 Legutóbbiak</button><button class="btn ghost" data-action="page" data-page="tags">🏷️ Címkék</button></div><div class="import-tools">${folderPicker?'<label class="btn import-btn" for="folderTextFiles" data-action="import-folder">📁 Mappa importálása</label>':''}<button class="btn import-btn" data-action="import-files">📄 Fájlok tömeges importálása</button><button class="btn" data-action="toggle-selection">☑ Több dal kijelölése${selectionMode?' ✓':''}</button><input type="file" id="bulkTextFiles" accept=".txt,text/plain" multiple hidden><input type="file" id="folderTextFiles" accept=".txt,text/plain" webkitdirectory directory multiple hidden><span class="import-note">${folderPicker?'TXT-fájlokat és almappákat is beolvas.':'Mappaválasztó nem érhető el ebben a böngészőben; jelölj ki egyszerre több TXT-fájlt.'}</span></div>`;
+  return `<div class="library-shortcuts"><button class="btn ghost" data-action="page" data-page="favorites">⭐ Kedvencek</button><button class="btn ghost" data-action="page" data-page="recent">🕐 Legutóbbiak</button><button class="btn ghost" data-action="page" data-page="tags">🏷️ Címkék</button></div><div class="import-tools">${folderPicker?'<label class="btn import-btn" for="folderTextFiles" data-action="import-folder">📁 Mappa importálása</label>':''}<button class="btn import-btn" data-action="import-files">📄 Fájlok tömeges importálása</button><button class="btn" data-action="toggle-selection">☑ Több dal kijelölése${selectionMode?' ✓':''}</button><input type="file" id="bulkTextFiles" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple hidden><input type="file" id="folderTextFiles" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" webkitdirectory directory multiple hidden><span class="import-note">${folderPicker?'TXT- és Word-fájlokat, valamint almappákat is beolvas.':'Mappaválasztó nem érhető el ebben a böngészőben; jelölj ki egyszerre több TXT- vagy Word-fájlt.'}</span></div>`;
 }
 songsView=function(){
   let html=baseSongsView();
@@ -73,7 +73,7 @@ const baseRenderReader=renderReader;
 renderReader=function(){baseRenderReader();if(currentSongId&&!readerContext?.gigId){const b=$('.reader-close');if(b){b.textContent='← Vissza';b.setAttribute('aria-label','Vissza')}}};
 
 function updateBulkCount(){const el=$('#bulkCount');if(el)el.textContent=String(selectedSongIds.size)}
-function textTitle(name){return String(name||'').replace(/\\/g,'/').split('/').pop().replace(/\.txt$/i,'').replace(/\s+/g,' ').trim().slice(0,180)}
+function textTitle(name){return String(name||'').replace(/\\/g,'/').split('/').pop().replace(/\.(?:txt|docx)$/i,'').replace(/\s+/g,' ').trim().slice(0,180)}
 function normalizedTitle(name){return String(name||'').normalize('NFC').trim().toLocaleLowerCase('hu')}
 async function readTxtFile(file){
   const bytes=await file.arrayBuffer();let text=new TextDecoder('utf-8').decode(bytes).replace(/^\uFEFF/,'');
@@ -81,6 +81,32 @@ async function readTxtFile(file){
   if(!text.trim())throw Error('empty');
   const controls=(text.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g)||[]).length;if(controls/Math.max(text.length,1)>.01)throw Error('binary');
   return text.replace(/\r\n?/g,'\n').trim();
+}
+async function readDocxFile(file){
+  const bytes=new Uint8Array(await file.arrayBuffer()),view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),min=Math.max(0,bytes.length-65557);let end=-1;
+  for(let i=bytes.length-22;i>=min;i--)if(view.getUint32(i,true)===0x06054b50){end=i;break}
+  if(end<0)throw Error('docx-zip');
+  const count=view.getUint16(end+10,true),directorySize=view.getUint32(end+12,true);let position=view.getUint32(end+16,true),xmlBytes=null;
+  const decoder=new TextDecoder();
+  for(let i=0;i<count&&position+46<=bytes.length&&position<view.getUint32(end+16,true)+directorySize;i++){
+    if(view.getUint32(position,true)!==0x02014b50)throw Error('docx-directory');
+    const method=view.getUint16(position+10,true),compressedSize=view.getUint32(position+20,true),nameLength=view.getUint16(position+28,true),extraLength=view.getUint16(position+30,true),commentLength=view.getUint16(position+32,true),localOffset=view.getUint32(position+42,true);
+    const name=decoder.decode(bytes.subarray(position+46,position+46+nameLength));
+    if(name==='word/document.xml'){
+      if(view.getUint32(localOffset,true)!==0x04034b50)throw Error('docx-entry');
+      const dataOffset=localOffset+30+view.getUint16(localOffset+26,true)+view.getUint16(localOffset+28,true),compressed=bytes.subarray(dataOffset,dataOffset+compressedSize);
+      if(method===0)xmlBytes=compressed;
+      else if(method===8){if(typeof DecompressionStream!=='function')throw Error('docx-compression');const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));xmlBytes=new Uint8Array(await new Response(stream).arrayBuffer())}
+      else throw Error('docx-compression');
+      break;
+    }
+    position+=46+nameLength+extraLength+commentLength;
+  }
+  if(!xmlBytes)throw Error('docx-document');
+  const xml=new DOMParser().parseFromString(decoder.decode(xmlBytes),'application/xml');if(xml.querySelector('parsererror'))throw Error('docx-xml');
+  const paragraphs=Array.from(xml.getElementsByTagNameNS('http://schemas.openxmlformats.org/wordprocessingml/2006/main','p'));
+  const collect=node=>{let out='';for(const child of node.childNodes){if(child.nodeType===Node.TEXT_NODE)continue;if(child.nodeType!==Node.ELEMENT_NODE)continue;const kind=child.localName;if(kind==='t')out+=child.textContent||'';else if(kind==='tab')out+='\t';else if(kind==='br'||kind==='cr')out+='\n';else out+=collect(child)}return out};
+  const text=paragraphs.map(collect).join('\n').replace(/\r\n?/g,'\n').trim();if(!text)throw Error('empty');return text;
 }
 async function collectDirectory(handle,files=[],depth=0){
   if(depth>24)throw Error('depth');
@@ -96,17 +122,17 @@ async function importTextBatch(files){
   skipped+=Math.max(0,files.length-limit);
   for(const file of Array.from(files).slice(0,limit)){
     if(file.__readError){invalid++;continue}
-    if(!/\.txt$/i.test(file.name||'')){skipped++;continue}
+    const isDocx=/\.docx$/i.test(file.name||'');if(!/\.(?:txt|docx)$/i.test(file.name||'')){skipped++;continue}
     const title=textTitle(file.name);
     if(!title||title.length<1||file.size>2*1024*1024){invalid++;continue}
     if(readBytes+file.size>50*1024*1024){skipped++;continue}
-    let lyrics;try{lyrics=await readTxtFile(file)}catch{invalid++;continue}
+    let lyrics;try{lyrics=isDocx?await readDocxFile(file):await readTxtFile(file)}catch{invalid++;continue}
     readBytes+=file.size;
     const key=normalizedTitle(title);
     if(seen.has(key)){existed++;continue}
     seen.add(key);candidates.push({id:uid(),title,artist:'',lyrics,tags:[],favorite:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),lastOpened:null});
   }
-  modal={type:'textImportPreview',title:'TXT-dalok importálása',candidates,stats:{input:limit,added:candidates.length,existed,skipped,invalid}};renderModal();
+  modal={type:'textImportPreview',title:'TXT- és Word-dalok importálása',candidates,stats:{input:limit,added:candidates.length,existed,skipped,invalid}};renderModal();
 }
 async function beginFolderImport(){
   if(typeof window.showDirectoryPicker==='function'){
@@ -139,7 +165,7 @@ renderModal=function(){
   }
   if(modal?.type==='textImportPreview'){
     const s=modal.stats;
-    $('#overlay').innerHTML=`<div class="modal-backdrop" data-action="backdrop"><section class="modal"><div class="section-head"><h3>${esc(modal.title)}</h3><button class="btn ghost" data-action="cancel-text-import">×</button></div><p>TXT-fájlok átnézve. A dalcím a fájlnévből készül; az új dalok az <strong>Importált dalok</strong> címkét kapják.</p><div class="import-summary"><div><b>${s.added}</b><span>importálható</span></div><div><b>${s.existed}</b><span>már létezik / címütközés</span></div><div><b>${s.skipped}</b><span>nem támogatott vagy méretkorlát</span></div><div><b>${s.invalid}</b><span>üres, hibás vagy nem olvasható</span></div></div>${modal.candidates.length?`<div class="import-preview-list">${modal.candidates.slice(0,8).map(x=>`<span>${esc(x.title)}</span>`).join('')}${modal.candidates.length>8?`<span>… és még ${modal.candidates.length-8} dal</span>`:''}</div>`:''}<div class="modal-actions"><button class="btn" data-action="cancel-text-import">Mégsem</button><button class="btn primary" data-action="confirm-text-import" ${s.added?'':'disabled'}>Importálás (${s.added})</button></div></section></div>`;return;
+    $('#overlay').innerHTML=`<div class="modal-backdrop" data-action="backdrop"><section class="modal"><div class="section-head"><h3>${esc(modal.title)}</h3><button class="btn ghost" data-action="cancel-text-import">×</button></div><p>TXT- és Word-fájlok átnézve. A dalcím a fájlnévből készül; az új dalok az <strong>Importált dalok</strong> címkét kapják.</p><div class="import-summary"><div><b>${s.added}</b><span>importálható</span></div><div><b>${s.existed}</b><span>már létezik / címütközés</span></div><div><b>${s.skipped}</b><span>nem támogatott vagy méretkorlát</span></div><div><b>${s.invalid}</b><span>üres, hibás vagy nem olvasható</span></div></div>${modal.candidates.length?`<div class="import-preview-list">${modal.candidates.slice(0,8).map(x=>`<span>${esc(x.title)}</span>`).join('')}${modal.candidates.length>8?`<span>… és még ${modal.candidates.length-8} dal</span>`:''}</div>`:''}<div class="modal-actions"><button class="btn" data-action="cancel-text-import">Mégsem</button><button class="btn primary" data-action="confirm-text-import" ${s.added?'':'disabled'}>Importálás (${s.added})</button></div></section></div>`;return;
   }
   baseRenderModal();
 };
